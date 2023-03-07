@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
-import 'dart:ui';
-import 'package:animationsdemo/bd_demo/demo_home.dart';
+
 import 'package:animationsdemo/cards/cards.dart';
 import 'package:animationsdemo/menu/menu.dart';
 import 'package:flutter/material.dart';
@@ -133,12 +131,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               CardWidget(
                 width: MediaQuery.of(context).size.width,
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => BdHome(),
-                )),
-                child: Text('data'),
               ),
             ],
           ),
