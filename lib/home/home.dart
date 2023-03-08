@@ -13,30 +13,33 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late AnimationController _menuIndicatorController;
+  late AnimationController _menuController;
 
-  late Animation<double> _menuIndicatorDimension;
+  late CurvedAnimation _menuCurve;
+
+  late Animation<double> _menuIndicatorParentDimension;
+  late Animation<double> _manuIndicatorChildDimension;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _menuController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _menuIndicatorController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
+    _menuCurve = CurvedAnimation(
+      parent: _menuController,
+      curve: Curves.easeInOutQuint,
     );
-    _menuIndicatorDimension =
-        Tween<double>(begin: 10, end: 0).animate(_menuIndicatorController);
+    _menuIndicatorParentDimension =
+        Tween<double>(begin: 15, end: 0).animate(_menuCurve);
+    _manuIndicatorChildDimension =
+        Tween<double>(begin: 7, end: 0).animate(_menuCurve);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _menuIndicatorController.dispose();
+    _menuController.dispose();
     super.dispose();
   }
 
@@ -75,12 +78,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        if (_controller.status == AnimationStatus.completed) {
-                          unawaited(_menuIndicatorController.reverse());
-                          return _controller.reverse();
+                        if (_menuController.status ==
+                            AnimationStatus.completed) {
+                          return _menuController.reverse();
                         }
-                        unawaited(_menuIndicatorController.forward());
-                        return _controller.forward();
+                        unawaited(_menuController.forward());
+                        return _menuController.forward();
                       },
                       child: Stack(
                         children: [
@@ -98,13 +101,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ),
                           ),
                           AnimatedBuilder(
-                            animation: _menuIndicatorController,
+                            animation: _menuController,
                             builder: (context, child) => Container(
-                              height: _menuIndicatorDimension.value,
-                              width: _menuIndicatorDimension.value,
+                              height: _menuIndicatorParentDimension.value,
+                              width: _menuIndicatorParentDimension.value,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.black,
+                              ),
+                              child: Center(
+                                child: Container(
+                                  height: _manuIndicatorChildDimension.value,
+                                  width: _manuIndicatorChildDimension.value,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -124,7 +137,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     child: DynamicIslandWidget(
                       width: MediaQuery.of(context).size.width - 32,
-                      controller: _controller,
+                      controller: _menuController,
                     ),
                   ),
                 ],

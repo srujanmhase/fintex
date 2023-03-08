@@ -17,14 +17,12 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
   //bool isPaying = false;
 
   late AnimationController _sendController;
-  late AnimationController _txnController;
   late AnimationController _cardController;
   late AnimationController _paymentController;
 
   late Animation<double> _paymentButtonWidth;
   late Animation<double> _sendHeight;
   late Animation<double> _sendArrow;
-  late Animation<double> _txnHeight;
   late Animation<double> _cardRadians;
   late Animation<double> _sendElementsOpacity;
   late Animation<double> _sendElementsVerticalOffset;
@@ -42,10 +40,6 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
     _sendController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
-    );
-    _txnController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
     );
     _cardController = AnimationController(
       vsync: this,
@@ -65,15 +59,10 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
       parent: _sendController,
       curve: Curves.easeInOut,
     );
-    final txnCurve = CurvedAnimation(
-      parent: _txnController,
-      curve: Curves.easeInOut,
-    );
     _paymentButtonWidth = Tween<double>(begin: 90, end: widget.width - 92)
         .animate(paymentControllerCurve);
     _sendArrow = Tween<double>(begin: -1.6, end: 1.6).animate(_sendController);
     _sendHeight = Tween<double>(begin: 110, end: 250).animate(sendCurve);
-    _txnHeight = Tween<double>(begin: 110, end: 250).animate(txnCurve);
     _cardRadians = Tween<double>(begin: 1, end: 0).animate(_cardController);
     _sendElementsOpacity =
         Tween<double>(begin: 0, end: 1).animate(_sendController);
@@ -89,18 +78,17 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
     //Payment Offsets
     _profilePaymentOffset = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(70, 0),
+      end: const Offset(80, 0),
     ).animate(_paymentController);
     _amountPaymentOffset = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(50, 0),
+      end: const Offset(60, 0),
     ).animate(_paymentController);
   }
 
   @override
   void dispose() {
     _sendController.dispose();
-    _txnController.dispose();
     super.dispose();
   }
 
@@ -131,14 +119,6 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
 
                 if (!state.isTransacting) {
                   _paymentController.reverse();
-                }
-
-                if (state.isRecentsActive) {
-                  _txnController.forward();
-                }
-
-                if (!state.isRecentsActive) {
-                  _txnController.reverse();
                 }
               },
               listenWhen: (previous, current) => previous != current,
@@ -361,27 +341,6 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    //Recent Card
-                    Transform.translate(
-                      offset: const Offset(0, -20),
-                      child: AnimatedBuilder(
-                        animation: _txnController,
-                        builder: (context, child) => GestureDetector(
-                          onTap: () => context.read<AppCubit>().recentToggle(),
-                          child: Container(
-                            width: MediaQuery.of(context).size.width - 32,
-                            height: _txnHeight.value,
-                            decoration: BoxDecoration(
-                              border: Border.all(),
-                              borderRadius: const BorderRadius.only(
-                                bottomLeft: Radius.circular(24),
-                                bottomRight: Radius.circular(24),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 );
               },
@@ -404,16 +363,65 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
               child: Container(
                 width: MediaQuery.of(context).size.width - 32,
                 height: 200,
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xffccff00),
                   border: Border.all(color: const Color(0xffa0c800)),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: const Center(
-                  child: Text(
-                    'VISA',
-                    style: TextStyle(fontSize: 28),
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    //VISA Logo
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/cib_visa.png',
+                          height: 45,
+                        ),
+                      ],
+                    ),
+                    //Card Number
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (int i = 0; i < 3; i++)
+                          const ObfuscatedCardNumberElements(elements: 4),
+                        Text(
+                          '2214',
+                          style: GoogleFonts.inter(fontSize: 16),
+                        )
+                      ],
+                    ),
+                    //Account holder name & Bank
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'JON DOE',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.account_balance_outlined,
+                              size: 20,
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Text(
+                              'Bank',
+                              style: GoogleFonts.inter(fontSize: 13),
+                            ),
+                          ],
+                        )
+                      ],
+                    )
+                  ],
                 ),
               ),
             ),
@@ -454,6 +462,32 @@ class ProfileImage extends StatelessWidget {
         'assets/user_${mapLocation(index)}.jpg',
         fit: BoxFit.cover,
       ),
+    );
+  }
+}
+
+class ObfuscatedCardNumberElements extends StatelessWidget {
+  const ObfuscatedCardNumberElements({super.key, required this.elements});
+  final int elements;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (int i = 0; i < 5; i++)
+          Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xff4F4F4F),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 5),
+          ),
+        const SizedBox(
+          width: 20,
+        ),
+      ],
     );
   }
 }

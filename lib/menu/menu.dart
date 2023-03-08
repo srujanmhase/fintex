@@ -14,7 +14,6 @@ class DynamicIslandWidget extends StatefulWidget {
 
 class _DynamicIslandWidgetState extends State<DynamicIslandWidget>
     with TickerProviderStateMixin {
-  bool _isChildVisible = false;
   late Animation<double> _width;
   late Animation<double> _height;
 
@@ -45,9 +44,6 @@ class _DynamicIslandWidgetState extends State<DynamicIslandWidget>
         );
       },
       child: InkWell(
-        onLongPress: () async {
-          await widget.controller.forward();
-        },
         onTap: () async {
           if (widget.controller.status == AnimationStatus.completed) {
             await widget.controller.reverse();
