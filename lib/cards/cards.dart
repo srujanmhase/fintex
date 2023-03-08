@@ -22,8 +22,6 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
   late AnimationController _paymentController;
 
   late Animation<double> _paymentButtonWidth;
-  late Animation<double> _paymentButtonHeight;
-
   late Animation<double> _sendHeight;
   late Animation<double> _sendArrow;
   late Animation<double> _txnHeight;
@@ -31,6 +29,12 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
   late Animation<double> _sendElementsOpacity;
   late Animation<double> _sendElementsVerticalOffset;
   late Animation<Color?> _textColor;
+
+  late Animation<Offset> _profilePictureSendToggle;
+
+  //Payment Offsets
+  late Animation<Offset> _profilePaymentOffset;
+  late Animation<Offset> _amountPaymentOffset;
 
   @override
   void initState() {
@@ -47,7 +51,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _sendArrow = Tween<double>(begin: -1.6, end: 1.6).animate(_sendController);
+
     _paymentController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -56,10 +60,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
       parent: _paymentController,
       curve: Curves.easeInOutQuart,
     );
-    _paymentButtonWidth = Tween<double>(begin: 90, end: widget.width - 92)
-        .animate(paymentControllerCurve);
-    _paymentButtonHeight =
-        Tween<double>(begin: 110, end: 180).animate(paymentControllerCurve);
+
     final sendCurve = CurvedAnimation(
       parent: _sendController,
       curve: Curves.easeInOut,
@@ -68,6 +69,9 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
       parent: _txnController,
       curve: Curves.easeInOut,
     );
+    _paymentButtonWidth = Tween<double>(begin: 90, end: widget.width - 92)
+        .animate(paymentControllerCurve);
+    _sendArrow = Tween<double>(begin: -1.6, end: 1.6).animate(_sendController);
     _sendHeight = Tween<double>(begin: 110, end: 250).animate(sendCurve);
     _txnHeight = Tween<double>(begin: 110, end: 250).animate(txnCurve);
     _cardRadians = Tween<double>(begin: 1, end: 0).animate(_cardController);
@@ -77,6 +81,20 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
         Tween<double>(begin: 0, end: 20).animate(_sendController);
     _textColor = ColorTween(begin: Colors.white, end: Colors.black)
         .animate(_paymentController);
+    _profilePictureSendToggle = Tween<Offset>(
+      begin: Offset(widget.width - (widget.width * 0.35), 42),
+      end: const Offset(35, 117),
+    ).animate(_sendController);
+
+    //Payment Offsets
+    _profilePaymentOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(70, 0),
+    ).animate(_paymentController);
+    _amountPaymentOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(50, 0),
+    ).animate(_paymentController);
   }
 
   @override
@@ -127,6 +145,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
               builder: (context, state) {
                 return Column(
                   children: [
+                    //Send Card
                     AnimatedBuilder(
                       animation: _sendController,
                       builder: (context, child) => GestureDetector(
@@ -149,9 +168,10 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                             animation: _paymentController,
                             builder: (context, child) => Stack(
                               children: [
+                                //Enlarging CTA
                                 Positioned(
                                   right: 30,
-                                  top: 100,
+                                  top: 80,
                                   child: AnimatedBuilder(
                                     animation: _sendController,
                                     builder: (context, child) {
@@ -168,13 +188,14 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                                     },
                                     child: GestureDetector(
                                       onTap: () {
-                                        if (!state.isTransacting) {
+                                        if (!state.isTransacting &&
+                                            state.isSendActive) {
                                           context.read<AppCubit>().send();
                                         }
                                       },
                                       child: Container(
                                         width: _paymentButtonWidth.value,
-                                        height: 110,
+                                        height: 130,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius:
@@ -191,6 +212,72 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                                     ),
                                   ),
                                 ),
+                                //Send Money header Elements (static)
+                                Positioned(
+                                  top: 40,
+                                  right: 15,
+                                  left: 15,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          AnimatedBuilder(
+                                            animation: _sendController,
+                                            builder: (context, child) =>
+                                                Transform.rotate(
+                                              angle: _sendArrow.value,
+                                              child: child,
+                                            ),
+                                            child: SizedBox(
+                                              height: 30,
+                                              width: 30,
+                                              child: Transform.translate(
+                                                offset: const Offset(5, 0),
+                                                child: const Icon(
+                                                  Icons.arrow_back_ios,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                            width: 10,
+                                          ),
+                                          Text(
+                                            'Send Money',
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                      Row(
+                                        children: const [
+                                          Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 2.5,
+                                            ),
+                                            child: ProfileImage(
+                                              index: 1,
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 2.5,
+                                            ),
+                                            child: ProfileImage(
+                                              index: 2,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                //Name & Amount Column
                                 Positioned(
                                   top: 100,
                                   left: 30,
@@ -212,46 +299,44 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              height: 25,
-                                              width: 25,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.grey,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Text(
-                                              'JON DOE III',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 16,
-                                                color: _textColor.value,
-                                              ),
-                                            )
-                                          ],
+                                        Transform.translate(
+                                          offset: _profilePaymentOffset.value,
+                                          child: Row(
+                                            children: [
+                                              const SizedBox(width: 35),
+                                              Text(
+                                                'JON DOE III',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 16,
+                                                  color: _textColor.value,
+                                                ),
+                                              )
+                                            ],
+                                          ),
                                         ),
                                         const SizedBox(height: 10),
-                                        Container(
-                                          width: widget.width * 0.45,
-                                          height: 65,
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.white.withOpacity(0.3),
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            border: Border.all(
-                                              color: Colors.white,
+                                        Transform.translate(
+                                          offset: _amountPaymentOffset.value,
+                                          child: Container(
+                                            width: widget.width * 0.45,
+                                            height: 65,
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.white.withOpacity(0.3),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: Colors.white,
+                                              ),
                                             ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              r'$ 82',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: _textColor.value,
+                                            child: Center(
+                                              child: Text(
+                                                r'$ 82.4',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _textColor.value,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -260,90 +345,15 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                                     ),
                                   ),
                                 ),
-                                Column(
-                                  children: [
-                                    // Arrow and Icons (static)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: 40,
-                                        left: 15,
-                                        right: 15,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              AnimatedBuilder(
-                                                animation: _sendController,
-                                                builder: (context, child) =>
-                                                    Transform.rotate(
-                                                  angle: _sendArrow.value,
-                                                  child: child,
-                                                ),
-                                                child: SizedBox(
-                                                  height: 30,
-                                                  width: 30,
-                                                  child: Transform.translate(
-                                                    offset: const Offset(5, 0),
-                                                    child: const Icon(
-                                                      Icons.arrow_back_ios,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(
-                                                width: 10,
-                                              ),
-                                              Text(
-                                                'Send Money',
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 5,
-                                                ),
-                                                child: Container(
-                                                  height: 25,
-                                                  width: 25,
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                    color: Colors.grey,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 5,
-                                                ),
-                                                child: Container(
-                                                  height: 25,
-                                                  width: 25,
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                    color: Colors.grey,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
+                                //Animated Profile Picture
+                                Transform.translate(
+                                  offset: _profilePaymentOffset.value,
+                                  child: Transform.translate(
+                                    offset: _profilePictureSendToggle.value,
+                                    child: const ProfileImage(
+                                      index: 3,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -351,6 +361,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
+                    //Recent Card
                     Transform.translate(
                       offset: const Offset(0, -20),
                       child: AnimatedBuilder(
@@ -408,6 +419,40 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ProfileImage extends StatelessWidget {
+  const ProfileImage({super.key, required this.index});
+  final int index;
+  String mapLocation(int index) {
+    switch (index) {
+      case 1:
+        return 'one';
+      case 2:
+        return 'two';
+      case 3:
+        return 'three';
+      default:
+        return 'four';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 25,
+      width: 25,
+      clipBehavior: Clip.hardEdge,
+      decoration: const BoxDecoration(
+        color: Colors.grey,
+        shape: BoxShape.circle,
+      ),
+      child: Image.asset(
+        'assets/user_${mapLocation(index)}.jpg',
+        fit: BoxFit.cover,
       ),
     );
   }
