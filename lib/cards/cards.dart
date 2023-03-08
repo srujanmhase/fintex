@@ -14,13 +14,15 @@ class CardWidget extends StatefulWidget {
 }
 
 class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
-  bool isPaying = false;
+  //bool isPaying = false;
 
   late AnimationController _sendController;
   late AnimationController _txnController;
   late AnimationController _cardController;
   late AnimationController _paymentController;
+
   late Animation<double> _paymentButtonWidth;
+  late Animation<double> _paymentButtonHeight;
 
   late Animation<double> _sendHeight;
   late Animation<double> _sendArrow;
@@ -28,6 +30,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
   late Animation<double> _cardRadians;
   late Animation<double> _sendElementsOpacity;
   late Animation<double> _sendElementsVerticalOffset;
+  late Animation<Color?> _textColor;
 
   @override
   void initState() {
@@ -55,6 +58,8 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
     );
     _paymentButtonWidth = Tween<double>(begin: 90, end: widget.width - 92)
         .animate(paymentControllerCurve);
+    _paymentButtonHeight =
+        Tween<double>(begin: 110, end: 180).animate(paymentControllerCurve);
     final sendCurve = CurvedAnimation(
       parent: _sendController,
       curve: Curves.easeInOut,
@@ -69,7 +74,9 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
     _sendElementsOpacity =
         Tween<double>(begin: 0, end: 1).animate(_sendController);
     _sendElementsVerticalOffset =
-        Tween<double>(begin: 0, end: 10).animate(_sendController);
+        Tween<double>(begin: 0, end: 20).animate(_sendController);
+    _textColor = ColorTween(begin: Colors.white, end: Colors.black)
+        .animate(_paymentController);
   }
 
   @override
@@ -91,7 +98,31 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
             top: 180,
             left: 0,
             child: BlocConsumer<AppCubit, AppState>(
-              listener: (previous, current) {},
+              listener: (context, state) {
+                if (state.isSendActive && !state.isTransacting) {
+                  _sendController.forward();
+                }
+
+                if (!state.isSendActive && !state.isTransacting) {
+                  _sendController.reverse();
+                }
+
+                if (state.isTransacting) {
+                  _paymentController.forward();
+                }
+
+                if (!state.isTransacting) {
+                  _paymentController.reverse();
+                }
+
+                if (state.isRecentsActive) {
+                  _txnController.forward();
+                }
+
+                if (!state.isRecentsActive) {
+                  _txnController.reverse();
+                }
+              },
               listenWhen: (previous, current) => previous != current,
               builder: (context, state) {
                 return Column(
@@ -100,12 +131,8 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                       animation: _sendController,
                       builder: (context, child) => GestureDetector(
                         onTap: () {
-                          if (_sendController.status ==
-                                  AnimationStatus.completed &&
-                              !isPaying) {
-                            _sendController.reverse();
-                          } else if (!isPaying) {
-                            _sendController.forward();
+                          if (!state.isTransacting) {
+                            context.read<AppCubit>().sendToggle();
                           }
                         },
                         child: Container(
@@ -118,164 +145,208 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                               bottomRight: Radius.circular(24),
                             ),
                           ),
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                right: 30,
-                                top: 100,
-                                child: AnimatedBuilder(
-                                  animation: _sendController,
-                                  builder: (context, child) {
-                                    return Transform.translate(
-                                      offset: Offset(
-                                        0,
-                                        _sendElementsVerticalOffset.value,
-                                      ),
-                                      child: Opacity(
-                                        opacity: _sendElementsOpacity.value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () async {
-                                              if (!isPaying) {
-                                                setState(() {
-                                                  isPaying = true;
-                                                });
-                                                await _paymentController
-                                                    .forward();
-                                                await Future.delayed(
-                                                    const Duration(seconds: 4),
-                                                    () async {
-                                                  await _paymentController
-                                                      .reverse();
-                                                });
-                                                setState(() {
-                                                  isPaying = false;
-                                                });
-                                              }
-                                            },
-                                            child: AnimatedBuilder(
-                                              animation: _paymentController,
-                                              builder: (context, child) =>
-                                                  Container(
-                                                width:
-                                                    _paymentButtonWidth.value,
-                                                height: 110,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
+                          child: AnimatedBuilder(
+                            animation: _paymentController,
+                            builder: (context, child) => Stack(
+                              children: [
+                                Positioned(
+                                  right: 30,
+                                  top: 100,
+                                  child: AnimatedBuilder(
+                                    animation: _sendController,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset: Offset(
+                                          0,
+                                          _sendElementsVerticalOffset.value,
+                                        ),
+                                        child: Opacity(
+                                          opacity: _sendElementsOpacity.value,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        if (!state.isTransacting) {
+                                          context.read<AppCubit>().send();
+                                        }
+                                      },
+                                      child: Container(
+                                        width: _paymentButtonWidth.value,
+                                        height: 110,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(15),
+                                        ),
+                                        child: (!state.isTransacting)
+                                            ? const Center(
+                                                child: Icon(
+                                                  Icons.arrow_forward_ios,
                                                 ),
-                                                child: (!isPaying)
-                                                    ? const Center(
-                                                        child: Icon(
-                                                          Icons
-                                                              .arrow_forward_ios,
-                                                        ),
-                                                      )
-                                                    : null,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                              )
+                                            : null,
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Column(
-                                children: [
-                                  // Arrow and Icons (static)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 40,
-                                      left: 15,
-                                      right: 15,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                Positioned(
+                                  top: 100,
+                                  left: 30,
+                                  child: AnimatedBuilder(
+                                    animation: _sendController,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset: Offset(
+                                          0,
+                                          _sendElementsVerticalOffset.value,
+                                        ),
+                                        child: Opacity(
+                                          opacity: _sendElementsOpacity.value,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            AnimatedBuilder(
-                                              animation: _sendController,
-                                              builder: (context, child) =>
-                                                  Transform.rotate(
-                                                angle: _sendArrow.value,
-                                                child: child,
-                                              ),
-                                              child: SizedBox(
-                                                height: 30,
-                                                width: 30,
-                                                child: Transform.translate(
-                                                  offset: const Offset(5, 0),
-                                                  child: const Icon(
-                                                    Icons.arrow_back_ios,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
+                                            Container(
+                                              height: 25,
+                                              width: 25,
+                                              decoration: const BoxDecoration(
+                                                color: Colors.grey,
+                                                shape: BoxShape.circle,
                                               ),
                                             ),
-                                            const SizedBox(
-                                              width: 10,
-                                            ),
+                                            const SizedBox(width: 10),
                                             Text(
-                                              'Send Money',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
+                                              'JON DOE III',
+                                              style: GoogleFonts.inter(
                                                 fontSize: 16,
+                                                color: _textColor.value,
                                               ),
                                             )
                                           ],
                                         ),
-                                        Row(
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 5,
-                                              ),
-                                              child: Container(
-                                                height: 25,
-                                                width: 25,
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.grey,
-                                                  shape: BoxShape.circle,
-                                                ),
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          width: widget.width * 0.45,
+                                          height: 65,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withOpacity(0.3),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              r'$ 82',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: _textColor.value,
                                               ),
                                             ),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 5,
-                                              ),
-                                              child: Container(
-                                                height: 25,
-                                                width: 25,
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.grey,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        )
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                Column(
+                                  children: [
+                                    // Arrow and Icons (static)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 40,
+                                        left: 15,
+                                        right: 15,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              AnimatedBuilder(
+                                                animation: _sendController,
+                                                builder: (context, child) =>
+                                                    Transform.rotate(
+                                                  angle: _sendArrow.value,
+                                                  child: child,
+                                                ),
+                                                child: SizedBox(
+                                                  height: 30,
+                                                  width: 30,
+                                                  child: Transform.translate(
+                                                    offset: const Offset(5, 0),
+                                                    child: const Icon(
+                                                      Icons.arrow_back_ios,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: 10,
+                                              ),
+                                              Text(
+                                                'Send Money',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                ),
+                                              )
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 5,
+                                                ),
+                                                child: Container(
+                                                  height: 25,
+                                                  width: 25,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    color: Colors.grey,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 5,
+                                                ),
+                                                child: Container(
+                                                  height: 25,
+                                                  width: 25,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    color: Colors.grey,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -285,10 +356,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                       child: AnimatedBuilder(
                         animation: _txnController,
                         builder: (context, child) => GestureDetector(
-                          onTap: () =>
-                              _txnController.status == AnimationStatus.completed
-                                  ? _txnController.reverse()
-                                  : _txnController.forward(),
+                          onTap: () => context.read<AppCubit>().recentToggle(),
                           child: Container(
                             width: MediaQuery.of(context).size.width - 32,
                             height: _txnHeight.value,
