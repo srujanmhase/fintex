@@ -1,5 +1,5 @@
 # Fintex
-A concept fintech app with state management for animated interactions
+A concept fintech app made in flutter with state management for animated interactions
 
 [![Demo Video](https://img.youtube.com/vi/IXn_tirNQsk/0.jpg)](https://www.youtube.com/watch?v=IXn_tirNQsk)
 
