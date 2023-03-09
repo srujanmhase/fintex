@@ -5,9 +5,11 @@ class DynamicIslandWidget extends StatefulWidget {
     super.key,
     required this.width,
     required this.controller,
+    required this.child,
   });
   final double width;
   final AnimationController controller;
+  final Widget child;
   @override
   State<DynamicIslandWidget> createState() => _DynamicIslandWidgetState();
 }
@@ -29,7 +31,7 @@ class _DynamicIslandWidgetState extends State<DynamicIslandWidget>
       begin: 0,
       end: widget.width,
     ).animate(_curve);
-    _height = Tween<double>(begin: 0, end: 150).animate(_curve);
+    _height = Tween<double>(begin: 0, end: 100).animate(_curve);
   }
 
   @override
@@ -49,12 +51,7 @@ class _DynamicIslandWidgetState extends State<DynamicIslandWidget>
             await widget.controller.reverse();
           }
         },
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
+        child: widget.child,
       ),
     );
   }
