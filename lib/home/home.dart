@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:animationsdemo/app_cubit.dart';
 import 'package:animationsdemo/cards/cards.dart';
 import 'package:animationsdemo/menu/menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
@@ -138,9 +140,44 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     child: DynamicIslandWidget(
                       width: MediaQuery.of(context).size.width - 32,
                       controller: _menuController,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: const [
+                            FittedBox(
+                              child: Icon(
+                                Icons.account_balance_outlined,
+                                color: Colors.white,
+                                size: 35,
+                              ),
+                            ),
+                            FittedBox(
+                              child: Icon(
+                                Icons.account_circle_outlined,
+                                color: Colors.white,
+                                size: 35,
+                              ),
+                            ),
+                            FittedBox(
+                              child: Icon(
+                                Icons.login_outlined,
+                                color: Colors.white,
+                                size: 35,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
+              ),
+              PaidNotification(
+                width: MediaQuery.of(context).size.width - 32,
               ),
               CardWidget(
                 width: MediaQuery.of(context).size.width,
@@ -149,6 +186,156 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+}
+
+class PaidNotification extends StatefulWidget {
+  const PaidNotification({
+    super.key,
+    required this.width,
+  });
+  final double width;
+  @override
+  State<PaidNotification> createState() => _PaidNotificationState();
+}
+
+class _PaidNotificationState extends State<PaidNotification>
+    with TickerProviderStateMixin {
+  //Notification Panel Body
+  late AnimationController _controller;
+  late CurvedAnimation _curve;
+
+  late Animation<double> _height;
+  late Animation<double> _width;
+
+  //Notification Timer
+  late AnimationController _timerController;
+  late Animation<double> _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    //Notification Panel Body
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _curve = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutQuint,
+    );
+
+    _height = Tween<double>(begin: 0, end: 77).animate(_curve);
+    _width = Tween<double>(begin: 0.01, end: widget.width).animate(_curve);
+
+    //Notification Timer
+    _timerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+    _progress = Tween<double>(begin: 0, end: 1).animate(_timerController);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<AppCubit, AppState>(
+      listener: (context, state) {
+        if (state.isSent) {
+          _controller.forward().then((value) {
+            _timerController.forward();
+            Future.delayed(
+              const Duration(seconds: 3),
+              () {
+                _timerController.reset();
+                _controller.reverse();
+              },
+            );
+          });
+        }
+      },
+      listenWhen: (previous, current) => previous != current,
+      builder: (context, state) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Column(
+              children: [
+                SizedBox(
+                  width: _width.value,
+                  height: _height.value,
+                  child: child,
+                ),
+                SizedBox(
+                  height: _height.value / 3,
+                ),
+              ],
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: const Color(0xffEFEFEF),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(),
+                FittedBox(
+                  child: RichText(
+                    text: TextSpan(
+                      style:
+                          GoogleFonts.inter(fontSize: 16, color: Colors.black),
+                      children: [
+                        const TextSpan(text: 'Sent'),
+                        TextSpan(
+                          text: r'$ 82.4',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const TextSpan(text: ' to '),
+                        TextSpan(
+                          text: 'Jon Doe III ',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const TextSpan(text: 'successfully')
+                      ],
+                    ),
+                  ),
+                ),
+                AnimatedBuilder(
+                  animation: _timerController,
+                  builder: (context, child) => Row(
+                    children: [
+                      FittedBox(
+                        child: Container(
+                          height: 6,
+                          width: (widget.width * _progress.value) < 0.1
+                              ? 0.1
+                              : widget.width * _progress.value,
+                          decoration: const BoxDecoration(
+                            color: Color(0xff1F9900),
+                            borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(100),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
