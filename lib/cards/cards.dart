@@ -1,5 +1,4 @@
-import 'dart:math' as math;
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,13 +16,11 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
   //bool isPaying = false;
 
   late AnimationController _sendController;
-  late AnimationController _cardController;
   late AnimationController _paymentController;
 
   late Animation<double> _paymentButtonWidth;
   late Animation<double> _sendHeight;
   late Animation<double> _sendArrow;
-  late Animation<double> _cardRadians;
   late Animation<double> _sendElementsOpacity;
   late Animation<double> _sendElementsVerticalOffset;
   late Animation<Color?> _textColor;
@@ -41,10 +38,6 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _cardController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
 
     _paymentController = AnimationController(
       vsync: this,
@@ -57,13 +50,12 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
 
     final sendCurve = CurvedAnimation(
       parent: _sendController,
-      curve: Curves.easeInOut,
+      curve: Curves.easeInOutQuint,
     );
     _paymentButtonWidth = Tween<double>(begin: 90, end: widget.width - 92)
         .animate(paymentControllerCurve);
     _sendArrow = Tween<double>(begin: -1.6, end: 1.6).animate(_sendController);
     _sendHeight = Tween<double>(begin: 110, end: 250).animate(sendCurve);
-    _cardRadians = Tween<double>(begin: 1, end: 0).animate(_cardController);
     _sendElementsOpacity =
         Tween<double>(begin: 0, end: 1).animate(_sendController);
     _sendElementsVerticalOffset =
@@ -73,7 +65,7 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
     _profilePictureSendToggle = Tween<Offset>(
       begin: Offset(widget.width - (widget.width * 0.35), 42),
       end: const Offset(35, 117),
-    ).animate(_sendController);
+    ).animate(sendCurve);
 
     //Payment Offsets
     _profilePaymentOffset = Tween<Offset>(
@@ -335,6 +327,13 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
                                     ),
                                   ),
                                 ),
+                                //Activity Indicator
+                                if (state.isSending)
+                                  const Positioned(
+                                    top: 200,
+                                    left: 170,
+                                    child: CupertinoActivityIndicator(),
+                                  ),
                               ],
                             ),
                           ),
@@ -346,84 +345,68 @@ class _CardWidgetState extends State<CardWidget> with TickerProviderStateMixin {
               },
             ),
           ),
-          AnimatedBuilder(
-            animation: _cardController,
-            builder: (context, child) => Transform(
-              // transform: Matrix4.skew(_cardRadians.value, _cardRadians.value),
-              transform:
-                  Matrix4.rotationX((1 - _cardRadians.value) * math.pi / 2),
-              alignment: Alignment.center,
-
-              child: child,
+          Container(
+            width: MediaQuery.of(context).size.width - 32,
+            height: 200,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xffccff00),
+              border: Border.all(color: const Color(0xffa0c800)),
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: GestureDetector(
-              onTap: () => _cardController
-                  .forward()
-                  .then((value) => _cardController.reverse()),
-              child: Container(
-                width: MediaQuery.of(context).size.width - 32,
-                height: 200,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xffccff00),
-                  border: Border.all(color: const Color(0xffa0c800)),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                //VISA Logo
+                Row(
                   children: [
-                    //VISA Logo
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/cib_visa.png',
-                          height: 45,
-                        ),
-                      ],
+                    Image.asset(
+                      'assets/cib_visa.png',
+                      height: 45,
                     ),
-                    //Card Number
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (int i = 0; i < 3; i++)
-                          const ObfuscatedCardNumberElements(elements: 4),
-                        Text(
-                          '2214',
-                          style: GoogleFonts.inter(fontSize: 16),
-                        )
-                      ],
-                    ),
-                    //Account holder name & Bank
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'JON DOE',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.account_balance_outlined,
-                              size: 20,
-                            ),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            Text(
-                              'Bank',
-                              style: GoogleFonts.inter(fontSize: 13),
-                            ),
-                          ],
-                        )
-                      ],
+                  ],
+                ),
+                //Card Number
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (int i = 0; i < 3; i++)
+                      const ObfuscatedCardNumberElements(elements: 4),
+                    Text(
+                      '2214',
+                      style: GoogleFonts.inter(fontSize: 16),
                     )
                   ],
                 ),
-              ),
+                //Account holder name & Bank
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'JON DOE',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.account_balance_outlined,
+                          size: 20,
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Text(
+                          'Bank',
+                          style: GoogleFonts.inter(fontSize: 13),
+                        ),
+                      ],
+                    )
+                  ],
+                )
+              ],
             ),
           ),
         ],
