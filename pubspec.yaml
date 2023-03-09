@@ -16,7 +16,6 @@ dependencies:
     sdk: flutter
   intl: ^0.17.0
   google_fonts:
-  defer_pointer: ^0.0.2
   freezed_annotation:
 
 dev_dependencies:
